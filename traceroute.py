@@ -78,6 +78,6 @@ if __name__ == '__main__':
 	dest = input('please input the destination:\n')
 	try:
 		ip_address = gethostbyname(dest)
-		traceroute(dest)
+		traceroute(ip_address)
 	except:
 		print('wrong destination')
