@@ -7,7 +7,7 @@ import struct
 import time
 import select
 import binascii
-from ICMPPing import handle_error
+
 def checksum(data):
 	n = len(data)
 	m = n % 2
