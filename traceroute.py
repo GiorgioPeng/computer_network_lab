@@ -71,6 +71,8 @@ def traceroute(ip_address):
 		print(printResult)
 		ttl+=1
 		send.close()
+		if ttl > 255:
+			break
 		if tempIP == ip_address:
 			break
 	return
