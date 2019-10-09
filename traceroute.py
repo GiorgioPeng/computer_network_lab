@@ -58,7 +58,7 @@ def traceroute(ip_address):
 				if 3 < receiveTime-sendTime:
 					printResult += '*	'
 				else:
-					printResult += str(int((receiveTime-sendTime)*1000))+'ms	'
+					printResult += str(int((receiveTime-sendTime)*1000+0.5))+'ms	'
 					tempIP = receiveData[1][0]
 				tries -= 1
 			except error as er:
