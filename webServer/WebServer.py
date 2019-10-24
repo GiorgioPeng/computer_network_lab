@@ -15,6 +15,10 @@ def handleRequest(tcpSocket):
 		data = data.decode().split('\n')
 		try:
 			filePath = data[0].split(' ')[1][1:]
+			# if filePath == 'favicon.ico':
+			# 	continue
+			if filePath == '':
+				filePath = 'index.html'
 		except IndexError as e:
 			pass
 
