@@ -54,5 +54,13 @@ def startServer(serverAddress, serverPort):
 	server.close()
 	pass # Remove/replace when function is complete
 
-
-startServer("127.0.0.1", 8000)
+if __name__ == "__main__":
+	port_number = input("Please input the port number:\n")
+	try:
+		port_number = int(port_number)
+		if port_number < 65536 and port_number > 0:
+			startServer("127.0.0.1",port_number)
+		else:
+			startServer("127.0.0.1", 8000)
+	except ValueError as ve:
+		startServer("127.0.0.1", 8000)
