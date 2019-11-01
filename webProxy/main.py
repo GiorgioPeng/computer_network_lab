@@ -22,7 +22,7 @@ def seRequst(ip_address,data):
     return send_remote_socket
 
 def reRespond(send_remote_socket):
-    message = send_remote_socket.recv(4096) # receive the data from the remote server
+    message = send_remote_socket.recv(65536) # receive the data from the remote server
     send_remote_socket.close()
     # message = gzip.decompress(message).decode("utf-8")
     return message
