@@ -7,11 +7,13 @@ import struct
 import time
 import select
 import binascii
+
+
 def checksum(data):
 	n = len(data)
 	m = n % 2
 	sum = 0
-	for i in range(0, n - m ,2):
+	for i in range(0, n - m, 2):
 		sum += (data[i]) + ((data[i+1]) << 8)
 	if m:
 		sum += (data[-1])
@@ -20,7 +22,20 @@ def checksum(data):
 	answer = ~sum & 0xffff
 	answer = answer >> 8 | (answer << 8 & 0xff00)
 	return answer
-def handle_error(type,code):
+
+
+def handle_error(type, code):
+	'''
+	This method is used to distinguish which kind of error occurs or no error occurs
+
+	Parameter:
+		type <class 'int'>: the type of ICMP
+		code <class 'int'>: the code of ICMP
+
+	Return:
+		Normal string: the name of the error
+		Null string: there is no error
+	'''
 	if type == 0 and code == 0:
 		return ''
 	elif type == 3:
@@ -96,13 +111,26 @@ def handle_error(type,code):
 	else:
 		return ''
 
-def traceroute(ip_address,timeout=3):
+def traceroute(ip_address, timeout=3):
+	'''
+	This method is used to trace router
+
+	Parameter:
+		ip_address <class 'str'>: the destination of the traceroute
+		timeout <class 'int'> [default = 3]: the timeout of each ICMP requst of the traceroute
+
+	Return:
+		None
+	'''
+	# at the begin, set the ttl equal to 1
 	ttl = 1
 	while True:
+		# create the ICMP socket
 		send = socket(AF_INET,SOCK_RAW,getprotobyname('icmp'))
 		send.setsockopt(IPPROTO_IP,IP_TTL,ttl)
 		send.settimeout(timeout)
 
+		# construct the header of the ICMP packet
 		type = 8
 		code = 0
 		cksum = 0
@@ -113,27 +141,47 @@ def traceroute(ip_address,timeout=3):
 		cksum = checksum(packet)
 		packet = struct.pack('>BBHHH32s',type,code,cksum,id,seq,body_data)
 
+		# the print string
 		printResult = ''
-		tempIP = '' # the ip between the source IP and the destination IP
+		# the ip between the source IP and the destination IP
+		tempIP = '' 
+		# the try time is 3, which is as same as the tracert at cmd in windows system
 		tries = 3
+		# printTime is a counter, because the error must be same if we send ICMP packet to one destination, we just need to add the error message once,
 		printTime = 1
 		while tries > 0:
-			send.sendto(packet,(ip_address,0))
-			sendTime = time.time() # the sending time
+			# send the packet to the destination
+			send.sendto(packet, (ip_address, 0))
+			# record the send time
+			sendTime = time.time() 
 
-			try: # try to find some packet whose ttl equals 0
-				reply = select.select([send],[],[],timeout)
+			# try to find some packet whose ttl equals 0
+			try: 
+				reply = select.select([send], [], [], timeout)
+				# record the receive time
 				receiveTime = time.time()
+				# if the packet is empty, we will print a '*'
 				if reply[0] == []:
 					printResult += '*	'
+					tempTimeout = 9999
+				else:
+					tempTimeout = timeout
 
+				# receive the data 
 				receiveData = send.recvfrom(1024)
+				
+				# destuct the packet
 				type, code, cksum, id, seq = struct.unpack(">BBHHH", receiveData[0][20:28])
 				if printTime == 1:
-					printResult = handle_error(type,code)+'	'+printResult
+					# add the error message into the print result
+					#--------------------------- 有时候有点问题
+					printResult = handle_error(type, code) + '	' + printResult
+					# --------------------------
 					printTime -= 1
-				if timeout < receiveTime-sendTime:
+				# if the delay is greater than the timeout, we will print a '*'
+				if tempTimeout < receiveTime-sendTime:
 					printResult += '*	'
+				# in other situation, we will print the normal delay
 				else:
 					temp = int((receiveTime-sendTime)*1000+0.5)
 					if temp == 0:
@@ -141,24 +189,31 @@ def traceroute(ip_address,timeout=3):
 					printResult += str(temp)+'ms	'
 					tempIP = receiveData[1][0]
 				tries -= 1
+			# sometimes the packet will lost, and we can catch the exception
 			except error as er:
-				# sometimes the packet will lost, and we can catch the exception
 				tries -= 1
+		# if there is no packet which we received, we should think the packets are lost
 		if tempIP == '':
 			printResult = 'packet lost	'+printResult
+		# in other situation, we should try to get its domain
 		else:
 			try:
+				# try to get the domain of the ip
 				domain = gethostbyaddr(tempIP)
 				printResult += domain[0]
-				printResult += '['+tempIP+']'
+				printResult += '[' + tempIP + ']'
+			# if we donot get the domian
 			except error as e:
 				printResult += tempIP
+		# print the result
 		printResult = str(ttl)+'	'+printResult
 		print(printResult)
 		ttl+=1
 		send.close()
+		# if the ttl equal 256, we should exit, because the greatest ttl is equal to 255
 		if ttl == 256:
 			break
+		# if the packet arrive the destination, we also should exit
 		if tempIP == ip_address:
 			print("finished")
 			break

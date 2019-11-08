@@ -13,6 +13,17 @@ ICMP_ECHO_REQUEST = 8 #ICMP type code for echo request messages
 ICMP_ECHO_REPLY = 0 #ICMP type code for echo reply messages
 
 def handle_error(type,code):
+	'''
+	This method is used to distinguish which kind of error occurs or no error occurs
+
+	Parameter:
+		type <class 'int'>: the type of ICMP
+		code <class 'int'>: the code of ICMP
+	
+	Return:
+		Normal string: the name of the error
+		Null string: there is no error
+	'''
 	if type == 0 and code == 0:
 		return 0
 	elif type == 3:
@@ -87,35 +98,8 @@ def handle_error(type,code):
 		return 'address mask reply'
 	else:
 		return -1
-def checksum(string):
-	csum = 0
-	countTo = (len(string) // 2) * 2
-	count = 0
 
-	while count < countTo:
-		thisVal = string[count+1] * 256 + string[count]
-		csum = csum + thisVal
-		csum = csum & 0xffffffff
-		count = count + 2
-
-	if countTo < len(string):
-		csum = csum + string[len(string) - 1]
-		csum = csum & 0xffffffff
-
-	csum = (csum >> 16) + (csum & 0xffff)
-	csum = csum + (csum >> 16)
-	answer = ~csum
-	answer = answer & 0xffff
-	answer = answer >> 8 | (answer << 8 & 0xff00)
-
-	if sys.platform == 'darwin':
-		answer = htons(answer) & 0xffff
-	else:
-		answer = htons(answer)
-
-	return answer
-
-def chesksum(data):
+def checksum(data):
 	n = len(data)
 	m = n % 2
 	sum = 0
@@ -129,75 +113,127 @@ def chesksum(data):
 	answer = answer >> 8 | (answer << 8 & 0xff00)
 	return answer
 
-def receiveOnePing(icmpSocket, destinationAddress, ID, timeout,send_time):
-	# 1. Wait for the socket to receive a reply
+def receiveOnePing(icmpSocket, ID, timeout, send_time):
+	'''
+	This method is used to receive a ICMP packet
+
+	Parameter:
+		icmpSocket <class 'socket.socket'>:
+		ID <class 'int'>: the number of the process id which use to distinguish whether the receive packet and the send packet is corresponding
+		timeout <class 'float'>: the timeout of the ping operation
+		send_time <class 'float'>: the time of sending the icmp packet
+	
+	Return:
+		delay <class 'float'>: the delay of the ping operation
+		error_str <class 'str'>: the sescription of problem
+	'''
+	# Wait for the socket to receive a reply
 	reply = select.select([icmpSocket],[],[],float(timeout))
 	if reply[0] == []:
 		return 'timeout'
-	# 2. Once received, record time of receipt, otherwise, handle a timeout
+	# Once received, record time of receipt, otherwise, handle a timeout
 	receive_time = time.time()
-	# 3. Compare the time of receipt to time of sending, producing the total network delay
-
-	# 4. Unpack the packet header for useful information, including the ID
+	# Unpack the packet header for useful information, including the ID
 	receive_packet = icmpSocket.recvfrom(1024)
 	icmpHeader = receive_packet[0][20:28]
 	type, code, cksum, id, seq = struct.unpack(">BBHHH", icmpHeader)
-	# 5. Check that the ID matches between the request and reply
+	# Check that the ID matches between the request and reply
 	if handle_error(type,code) == 0 and id == ID:
-	# 6. Return total network delay
-		return receive_time - send_time
+		delay = receive_time - send_time
+		# Return total network delay
+		return delay
 	else:
-		return handle_error(type,code)
+		# Return the description of the problem
+		error_str = handle_error(type, code)
+		return error_str
 
-def sendOnePing(icmpSocket, destinationAddress, ID,seq):
-	# 1. Build ICMP header
+def sendOnePing(icmpSocket, destinationAddress, ID, seq):
+	'''
+	This method is used to send a ICMP packet
+
+	Parameter:
+		icmpSocket <class 'socket.socket'>: the socket of the icmp
+		destinationAddress <class 'str'>: the destination of the icmp packet
+		ID <class 'int'>: the number of the process id which use to distinguish whether the receive packet and the send packet is corresponding
+		seq <class 'int'>:the serial number of the packet
+
+	Return:
+		send_time <class 'float'>: the time of sending the ICMP packet
+	'''
+	# Build ICMP header
 	type = ICMP_ECHO_REQUEST
 	code = 0
 	cksum = 0
 	id = ID
 	send_time = time.time()
 	body_data = b'testtesttesttesttesttesttesttest'
-	# 2. Checksum ICMP packet using given function
+	packet = struct.pack('>BBHHH32s', type, code, cksum, id, seq, body_data)
+	# Checksum ICMP packet using given function
+	cksum = checksum(packet)
+	# Insert checksum into packet
 	packet = struct.pack('>BBHHH32s',type,code,cksum,id,seq,body_data)
-	cksum = chesksum(packet)
-	# 3. Insert checksum into packet
-	packet = struct.pack('>BBHHH32s',type,code,cksum,id,seq,body_data)
-	# 4. Send packet using socket
+	# Send packet using socket
 	icmpSocket.sendto(packet,(destinationAddress,80))
-	# 5. Record time of sending
+	# Record time of sending
 	return send_time
 
 def doOnePing(destinationAddress, timeout, seq):
+	'''
+	This method is used to do a ping operation
+
+	Parameter:
+		destinationAddress <class 'str'>: the destination of the ping operation
+		timeout <class 'float'>: the timeout of the ping operation
+		seq <class 'int'>: the serial number of the packet
+
+	Return:
+		delay <class 'float'>: the delay of the ping operation 
+	'''
 	# 1. Create ICMP socket
 	s = socket(AF_INET, SOCK_RAW, getprotobyname("icmp"))
 	# 2. Call sendOnePing function
 	send_time = sendOnePing(s,destinationAddress,os.getpid(),seq)
 	# 3. Call receiveOnePing function
-	receive_time = receiveOnePing(s,destinationAddress,os.getpid(),timeout,send_time)
+	delay = receiveOnePing(s,os.getpid(),timeout,send_time)
 	# 4. Close ICMP socket
 	s.close()
-	if type(receive_time) == type('a'):
-		return receive_time
+	if type(delay) == type('a'):
+		return delay
 	# 5. Return total network delay
-	if receive_time>float(timeout):
+	if delay>float(timeout):
 		return 'timeout'
 	else:
-		return receive_time
+		return delay
 
 def ping(*arg):
-	# 1. Look up hostname, resolving it to an IP address
+	'''
+	The method is used to ping
+
+	Parameter:
+		arg[0] <class 'str'>: the destination of the ping operation
+		arg[1] <class 'float'>: the timeout of the ping operation
+		arg[2] <class 'int'>: how many times the user wants to ping the destination
+	
+	Return:
+		None
+	'''
+	# the hint output
 	print("now we are pinging [{}], by a 32 bytes data".format(arg[0][0]))
+	# the statistics of the delays
 	delay_list = []
 	for i in range(int(arg[0][2])):
-		# 2. Call doOnePing function, approximately every second
-		delay = doOnePing(arg[0][0],arg[0][1],i)
+		# Call doOnePing function, approximately every second
+		time.sleep(1)
+		delay = doOnePing(arg[0][0], arg[0][1], i)
+		# if the receive packet is not timeout, then add the delay to the delay_list and print it
 		if type(delay) != type('a'):
 			delay_list.append(delay)
-		# 3. Print out the returned delay
+			# transfer the delay to the int type and print out the returned delay
 			print("Responses from {}: bytes=32 delay={}ms".format(arg[0][0],int(delay*1000//1)))
+		# if the receive packet is timeout,then print timeout
 		else:
 			print(delay)
-		# 4. Continue this process until stopped
+	# if there are some packet which are not timeout, then calculate the max, min, ave timeout the these packets.
 	if len(delay_list) !=0:
 		print('the maximum delay is {}ms, the minimum delay is {}ms, the average delay is {}ms'.format(int(max(delay_list)*1000//1),int(min(delay_list)*1000//1),int(sum(delay_list)/len(delay_list)*1000//1)))
 
