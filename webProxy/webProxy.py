@@ -26,17 +26,15 @@ def reRequst(proxy_socket):
     # print(temp_data)
     # it is acceptable method
     if temp_data[0:3] == 'GET' or temp_data[0:3] == 'PUT' or temp_data[0:6] == 'DELETE' or temp_data[0:4] == 'POST' or temp_data[0:4] == 'HEAD' or temp_data[0:5] == 'PATCH':
-        domain = re.findall(r'\/{1}[^/]+?\/', temp_data)  # match the domian
-
+        # match the domian(this last character is \r, so use [0:-1])
+        domain = re.findall(r'Host\:.*', temp_data)[0].split(' ')[1][0:-1]
+        print(domain)
         try:
-            # if we need use host to know which destination we should send
-            if domain == []:
-                domian = re.findall(r'Host\:.*', temp_data)
-                # get the ip address
-                ip_address = gethostbyname(domain[0].split(' ')[1])
-            else:
-                # get the ip address
-                ip_address = gethostbyname(domain[0][1:-1])
+            # get the ip address
+            domain = domain.split(':')[0]
+            ip_address = gethostbyname(domain)
+        except ValueError as va:
+            ip_address = gethostbyname(domain)
         except gaierror as ge:
             pass
 
