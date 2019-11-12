@@ -119,7 +119,7 @@ def receiveOnePing(icmpSocket, ID, timeout, send_time):
 
 	Parameter:
 		icmpSocket <class 'socket.socket'>:
-		ID <class 'int'>: the number of the process id which use to distinguish whether the receive packet and the send packet is corresponding
+		ID <class 'int'>: the identification of the packet
 		timeout <class 'float'>: the timeout of the ping operation
 		send_time <class 'float'>: the time of sending the icmp packet
 	
@@ -137,7 +137,6 @@ def receiveOnePing(icmpSocket, ID, timeout, send_time):
 	receive_packet = icmpSocket.recvfrom(1024)
 	icmpHeader = receive_packet[0][20:28]
 	type, code, cksum, id, seq = struct.unpack(">BBHHH", icmpHeader)
-	ID = 0
 	# Check that the ID matches between the request and reply
 	if handle_error(type,code) == 0 and id == ID:
 		delay = receive_time - send_time
@@ -157,7 +156,7 @@ def sendOnePing(icmpSocket, destinationAddress, ID, seq):
 	Parameter:
 		icmpSocket <class 'socket.socket'>: the socket of the icmp
 		destinationAddress <class 'str'>: the destination of the icmp packet
-		ID <class 'int'>: the number of the process id which use to distinguish whether the receive packet and the send packet is corresponding
+		ID <class 'int'>: the identification of the packet
 		seq <class 'int'>:the serial number of the packet
 
 	Return:
@@ -167,7 +166,7 @@ def sendOnePing(icmpSocket, destinationAddress, ID, seq):
 	type = ICMP_ECHO_REQUEST
 	code = 0
 	cksum = 0
-	id = 0
+	id = ID
 	send_time = time.time()
 	body_data = b'testtesttesttesttesttesttesttest'
 	packet = struct.pack('>BBHHH32s', type, code, cksum, id, seq, body_data)
@@ -195,9 +194,10 @@ def doOnePing(destinationAddress, timeout, seq):
 	# 1. Create ICMP socket
 	s = socket(AF_INET, SOCK_RAW, getprotobyname("icmp"))
 	# 2. Call sendOnePing function
-	send_time = sendOnePing(s,destinationAddress,os.getpid(),seq)
+	# sometimes the pid will be greater than 65535, so I use 0 to replace it
+	send_time = sendOnePing(s,destinationAddress,0,seq)
 	# 3. Call receiveOnePing function
-	delay = receiveOnePing(s,os.getpid(),timeout,send_time)
+	delay = receiveOnePing(s,0,timeout,send_time)
 	# 4. Close ICMP socket
 	s.close()
 	if type(delay) == type('a'):
