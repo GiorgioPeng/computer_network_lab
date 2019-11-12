@@ -174,9 +174,7 @@ def traceroute(ip_address, timeout=3):
 				type, code, cksum, id, seq = struct.unpack(">BBHHH", receiveData[0][20:28])
 				if printTime == 1:
 					# add the error message into the print result
-					#--------------------------- 有时候有点问题
 					printResult = handle_error(type, code) + '	' + printResult
-					# --------------------------
 					printTime -= 1
 				# if the delay is greater than the timeout, we will print a '*'
 				if tempTimeout < receiveTime-sendTime:

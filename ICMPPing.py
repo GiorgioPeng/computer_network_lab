@@ -137,14 +137,17 @@ def receiveOnePing(icmpSocket, ID, timeout, send_time):
 	receive_packet = icmpSocket.recvfrom(1024)
 	icmpHeader = receive_packet[0][20:28]
 	type, code, cksum, id, seq = struct.unpack(">BBHHH", icmpHeader)
+	ID = 0
 	# Check that the ID matches between the request and reply
 	if handle_error(type,code) == 0 and id == ID:
 		delay = receive_time - send_time
 		# Return total network delay
 		return delay
+	elif id != ID:
+		return "Mismatched package"
 	else:
-		# Return the description of the problem
 		error_str = handle_error(type, code)
+		# Return the description of the problem
 		return error_str
 
 def sendOnePing(icmpSocket, destinationAddress, ID, seq):
@@ -164,7 +167,7 @@ def sendOnePing(icmpSocket, destinationAddress, ID, seq):
 	type = ICMP_ECHO_REQUEST
 	code = 0
 	cksum = 0
-	id = ID
+	id = 0
 	send_time = time.time()
 	body_data = b'testtesttesttesttesttesttesttest'
 	packet = struct.pack('>BBHHH32s', type, code, cksum, id, seq, body_data)
