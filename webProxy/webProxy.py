@@ -12,9 +12,9 @@ def reRequst(proxy_socket):
         proxy_socket <class 'socket.socket'>: the proxy socket
 
     Return:
-        tempSocket <class 'socket.socket'>: the socket which is used to communicate with local
+        tempSocket <class 'socket.socket'>: the socket which is used to communicate with local client
         local_address <class 'tuple'>: the address of the local client
-        ip_address <class 'str'>: the ip address of the destination of the remote server
+        [ip_address, dest_port_number] <class 'list'>: the ip address and the portNumber of the destination of the remote server
         data <class 'bytes'>: the data from the local client
     '''
     # wait for the local client establish connection
@@ -22,13 +22,13 @@ def reRequst(proxy_socket):
     # receive the data which is from the local client
     data = tempSocket.recv(1048576)
     ip_address = ''
+    domain = ''
     temp_data = data.decode()   # decode the data to find the destination ip address
-    # print(temp_data)
+    dest_port_number = re.findall(":\d+", temp_data.split('\n')[0])
     # it is acceptable method
     if temp_data[0:3] == 'GET' or temp_data[0:3] == 'PUT' or temp_data[0:6] == 'DELETE' or temp_data[0:4] == 'POST' or temp_data[0:4] == 'HEAD' or temp_data[0:5] == 'PATCH':
         # match the domian(this last character is \r, so use [0:-1])
         domain = re.findall(r'Host\:.*', temp_data)[0].split(' ')[1][0:-1]
-        print(domain)
         try:
             # get the ip address
             domain = domain.split(':')[0]
@@ -37,8 +37,12 @@ def reRequst(proxy_socket):
             ip_address = gethostbyname(domain)
         except gaierror as ge:
             pass
-
-    return [tempSocket, local_address, ip_address, data]
+    # the defualt port number is 80
+    if dest_port_number == []:
+        return [tempSocket, local_address, [ip_address, 80], data]
+    else:
+        dest_port_number = dest_port_number[0][1:]
+        return [tempSocket, local_address, [ip_address, dest_port_number], data]
 
 
 def seRequst(ip_address, data):
@@ -46,7 +50,7 @@ def seRequst(ip_address, data):
     This method is used to send the local client request data to the remote server
 
     Parameter:
-        ip_address <class 'str'>: the ip address of the destination of the remote server
+        ip_address <class 'list'>: the ip address and the port number of the destination of the remote server
         data <class 'bytes'>: the data from the local client
 
     Return:
@@ -58,9 +62,12 @@ def seRequst(ip_address, data):
     while True:
         try:
             # connect to the remote server
-            send_remote_socket.connect((ip_address, 80))
+            print(ip_address)
+            send_remote_socket.connect((ip_address[0], int(ip_address[1])))
             break
         except TimeoutError as te:
+            pass
+        except ConnectionRefusedError as cre:
             pass
     # send the data which comes from the local client to the remote server
     send_remote_socket.sendall(data)
@@ -90,7 +97,7 @@ def seRespond(message, data_socket):
 
     Parameter:
         message <class 'bytes'>: the receive data from the remote server
-        data_socket <class 'socket.socket'>: the socket which is used to communicate with local
+        data_socket <class 'socket.socket'>: the socket which is used to communicate with local client
 
     Return:
         None
@@ -121,9 +128,11 @@ if __name__ == "__main__":
     # proxy_socket.setblocking(1) # set the socket in block mode
 
     while True:
+        print(1)
         # get some data from local client
         data_socket, local_address, ip_address, data = reRequst(proxy_socket)
-        if ip_address == '':
+        # if its method is https or options
+        if ip_address[0] == '':
             continue
         # send the data to the remote server
         send_remote_socket = seRequst(ip_address, data)
