@@ -55,6 +55,7 @@ def seRequst(ip_address, data):
 
     Return:
         send_remote_socket <class 'socket.socket'>: the socket which is used to communicate with the remote server
+        'error' <class 'str'>: WinError 10061, so we should do another connect
     '''
     # create a socket which is used to communicate with the remote server
     send_remote_socket = socket()
@@ -68,7 +69,8 @@ def seRequst(ip_address, data):
         except TimeoutError as te:
             pass
         except ConnectionRefusedError as cre:
-            pass
+            print(cre)
+            return 'error'
     # send the data which comes from the local client to the remote server
     send_remote_socket.sendall(data)
     return send_remote_socket
@@ -135,6 +137,9 @@ if __name__ == "__main__":
             continue
         # send the data to the remote server
         send_remote_socket = seRequst(ip_address, data)
+        # if WinError 10061 occur, we should do another connect
+        if send_remote_socket == 'error':
+            continue
         # get respond from the remote server
         message = reRespond(send_remote_socket)
         # send respond data to the local client
