@@ -128,7 +128,6 @@ if __name__ == "__main__":
     # proxy_socket.setblocking(1) # set the socket in block mode
 
     while True:
-        print(1)
         # get some data from local client
         data_socket, local_address, ip_address, data = reRequst(proxy_socket)
         # if its method is https or options

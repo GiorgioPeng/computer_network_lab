@@ -194,10 +194,10 @@ def doOnePing(destinationAddress, timeout, seq):
 	# 1. Create ICMP socket
 	s = socket(AF_INET, SOCK_RAW, getprotobyname("icmp"))
 	# 2. Call sendOnePing function
-	# sometimes the pid will be greater than 65535, so I use 0 to replace it
-	send_time = sendOnePing(s,destinationAddress,0,seq)
+	# sometimes the pid will be greater than 65535, and H format for packing only accept 0-65535, so I use 3 to replace it
+	send_time = sendOnePing(s,destinationAddress,3,seq)
 	# 3. Call receiveOnePing function
-	delay = receiveOnePing(s,0,timeout,send_time)
+	delay = receiveOnePing(s,3,timeout,send_time)
 	# 4. Close ICMP socket
 	s.close()
 	if type(delay) == type('a'):
