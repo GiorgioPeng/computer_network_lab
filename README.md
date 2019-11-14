@@ -1,6 +1,4 @@
-# **Please visit the introduction here**
-
-[A beautiful readme web](https://giorgiopeng.github.io/computer_network_lab/)
+# **Please visit the introduction here:** [A beautiful readme web](https://giorgiopeng.github.io/computer_network_lab/)
 
 ## This one include some experiments, icmp, traceroute, webserver, webproxy, of the computer network lecture.
 
