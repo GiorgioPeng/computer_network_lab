@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<style media="screen">
+  *{
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+  }
+  html,body{
+    height: 100%;
+    width: 100%;
+  }
+  div{
+    width: 80%;
+    height: 70%;
+    font-size: 30vh;
+    line-height: 30vh;
+    text-align: center;
+    font-weight: bolder;
+    color:grey;
+    position: absolute;
+    top: 0px;
+    left:0px;
+    transform:rotateZ(0deg);
+    -moz-transform:rotateZ(0deg);
+    -wekit-transform:rotateZ(0deg);
+    -o-animation-transform:rotateZ(0deg);
+    animation: ani 5s linear infinite;
+    -moz-animation: ani 5s linear infinite;
+    -webkit-animation: ani 5s linear infinite;
+    -o-animation: ani 5s linear infinite;
+  }
+  @keyframes ani
+  {
+  0%   {background: red;top:0px;left:0px;transform:rotateZ(0deg);-o-transform:rotateZ(0deg);-webkit-transform:rotateZ(0deg);-o-transform:rotateZ(0deg)}
+  25%  {background: yellow;top:50px;left:30px;transform:rotateZ(5deg);-o-transform:rotateZ(5deg);-webkit-transform:rotateZ(5deg);-o-transform:rotateZ(5deg)}
+  50%  {background: blue;left:100px;top:90px;transform:rotateZ(10deg);-o-transform:rotateZ(10deg);-webkit-transform:rotateZ(10deg);-o-transform:rotateZ(10deg)}
+  100% {background: green;left:0px;top:0px;transform:rotateZ(0deg);-o-transform:rotateZ(0deg);-webkit-transform:rotateZ(0deg);-o-transform:rotateZ(0deg)}
+  }
+</style>
+<body>
+  <div>hello the world</div>
+</body>
+</html>
