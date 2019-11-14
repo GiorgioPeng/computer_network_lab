@@ -4,6 +4,8 @@
 
 ---  
 
+> These scripts are based on python 3.5.2
+
 ## icmp:
 
 #### how to use?
